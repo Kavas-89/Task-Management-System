@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Task - Registration</title>
+    <link rel="icon" type="image/x-icon" href="/images/ZenTasklogo.jpeg">
+    <link rel="stylesheet" href="/css/loginstyle.css"> <!-- Linking external CSS -->
+    <script src="/javascript/registerform.js"></script>
+</head>
+
+<body>
+
+    <!-- Navbar Section -->
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <img src="/images/ZenTasklogo.jpeg" alt="Company Logo" class="logo"> <!-- Replace with your logo path -->
+        </div>
+        <div class="navbar-company-name">
+            <h1>Zen Task</h1>
+        </div>
+        <div class="navbar-links">
+            <a href="/index.html">Home</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Registration Form -->
+        <div class="registration-form">
+            <h2>Register</h2>
+            <form id="registrationForm">
+                <label for="username">Username<span>*</span></label>
+                <input type="text" id="username" name="username" required>
+                <small id="usernameError" class="error"></small>
+            
+                <label for="email">Email<span>*</span></label>
+                <input type="email" id="email" name="email" required>
+                <small id="emailError" class="error"></small>
+            
+                <label for="password">Password<span>*</span></label>
+                <input type="password" id="password" name="password" required>
+                <small id="passwordError" class="error"></small>
+            
+                <label for="confirm-password">Confirm Password<span>*</span></label>
+                <input type="password" id="confirm-password" name="confirm-password" required>
+                <small id="confirmPasswordError" class="error"></small>
+            
+                <!-- This is where the validation error message will be shown -->
+                <div id="validationError" class="error-message" style="color: red;"></div>
+            
+                <input type="submit" value="Register" style="display: block;">
+            </form>
+            
+            <div class="form-footer">
+                <p>Already have an account? <a href="/html/loginpage.html">Login here</a></p>
+            </div>
+        </div>
+    </div>
+    <footer class="footer">
+        <p>&copy; 2024 Zen Task. All Rights Reserved.</p>
+    </footer>
+</body>
+
+</html>
