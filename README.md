@@ -30,4 +30,9 @@ TaskManagementSystem/
 │── javascript/ # JS scripts
 │── html/ # HTML pages
 │── index.html # Entry point
+<<<<<<< HEAD
 │── README.md # Project documentation
+=======
+│── README.md # Project documentation
+
+>>>>>>> fbb5a7ddb4f2cf134464fd9bace46d7510e4e56e
