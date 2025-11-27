@@ -1,206 +1,144 @@
-// filename=employee.js
-// Initialize tasks and comments from localStorage
-let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-let comments = JSON.parse(localStorage.getItem('comments')) || [];
+// employeedash.js
 
-// Load tasks, comments, and set up event listeners when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    updateAssignedTaskList();
-    populateTaskOptions();
-    populateCommentOptions();
+// Load data from localStorage
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let comments = JSON.parse(localStorage.getItem("comments")) || [];
+const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
-    // Attach event listeners
-    document.getElementById("logoutBtn").addEventListener("click", logout);
-    document.getElementById("profileLink").addEventListener("click", showProfile);
-    document.getElementById("backToDashboardBtn").addEventListener("click", backToDashboard);
-    document.getElementById("viewCommentsForm").addEventListener("submit", viewComments);
+// Redirect if not logged in
+if (!loggedInUser) {
+  window.location.href = "/html/loginpage.html";
+}
+
+// ------------------ NAVIGATION ------------------
+function showSection(sectionId) {
+  document.querySelectorAll(".content-section").forEach(sec => sec.style.display = "none");
+  document.getElementById(sectionId).style.display = "block";
+
+  if (sectionId === "viewTasks") updateAssignedTaskList();
+  if (sectionId === "addComment") populateTaskOptions("taskToCommentAdd");
+  if (sectionId === "viewComments") populateTaskOptions("taskToCommentView");
+  if (sectionId === "performTask") populateTaskOptions("performTaskSelect");
+}
+
+// ------------------ PROFILE CARD ------------------
+document.getElementById("profileLink").addEventListener("click", () => {
+  document.querySelector(".content-section.active")?.classList.remove("active");
+  document.getElementById("profileCard").style.display = "block";
+
+  document.getElementById("userIdDisplay").textContent = loggedInUser.userId;
+  document.getElementById("usernameDisplay").textContent = loggedInUser.username;
+  document.getElementById("roleDisplay").textContent = loggedInUser.role;
 });
 
-// Function to show a specific section
-function showSection(sectionId) {
-    document.querySelectorAll('.content-section').forEach(section => section.style.display = 'none');
-    const selectedSection = document.getElementById(sectionId);
-    if (selectedSection) {
-        selectedSection.style.display = 'block';
-    }
-}
+document.getElementById("backToDashboardBtn").addEventListener("click", () => {
+  document.getElementById("profileCard").style.display = "none";
+  showSection("dashboard");
+});
 
-// Logout functionality
-function logout() {
-    localStorage.removeItem("loggedInUser");
-    window.location.href = '/html/loginpage.html'; 
-}
-
-// Show profile card when profile link is clicked
-function showProfile(event) {
-    event.preventDefault();
-    const profileCard = document.getElementById("profileCard");
-    const dashboardContent = document.getElementById("dashboardContent");
-
-    dashboardContent.style.display = "none"; 
-    profileCard.style.display = "block"; 
-
-    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
-    if (loggedInUser) {
-        document.getElementById("userIdDisplay").textContent = loggedInUser.userId;
-        document.getElementById("usernameDisplay").textContent = loggedInUser.username;
-        document.getElementById("roleDisplay").textContent = "Employee"; // Replace with actual role if needed
-    }
-}
-
-// Back to Dashboard button functionality
-function backToDashboard() {
-    const profileCard = document.getElementById("profileCard");
-    const dashboardContent = document.getElementById("dashboardContent");
-
-    profileCard.style.display = "none"; 
-    dashboardContent.style.display = "block"; 
-}
-
-// Update the assigned task list
+// ------------------ TASKS ------------------
 function updateAssignedTaskList() {
-    const assignedTaskList = document.getElementById("assignedTaskList");
-    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser")).userId; // Get logged-in user ID
+  const assignedTaskList = document.getElementById("assignedTaskList");
+  const userTasks = tasks.filter(task => task.assignedTo == loggedInUser.userId);
 
-    // Filter tasks assigned to the logged-in user
-    const userTasks = tasks.filter(task => task.assignedTo == loggedInUser);
-
-    assignedTaskList.innerHTML = userTasks.map(task => `
-        <li>
-            ${task.title} - ${task.status} (Due: ${task.dueDate})
-            <button onclick="viewComments(${task.id})">View Comments</button>
-        </li>
-    `).join('');
+  assignedTaskList.innerHTML = userTasks.length > 0
+    ? userTasks.map(task => `<li>${task.title} - ${task.status} (Due: ${task.dueDate})</li>`).join("")
+    : "<li>No tasks assigned.</li>";
 }
 
-// Function to mark a task as completed
-function completeTask(taskId) {
-    const task = tasks.find(t => t.id === taskId);
-    if (task) {
-        task.status = 'Completed';
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        showNotification("Task marked as completed!", "success");
-        updateAssignedTaskList();
-    } else {
-        showNotification("Task not found!", "danger");
-    }
-}
-
-// Function to create a new task
 function createTask(event) {
-    event.preventDefault();
-
-    const task = {
-        id: Date.now(),
-        title: document.getElementById("taskTitle").value.trim(),
-        description: document.getElementById("taskDescription").value.trim(),
-        priority: document.getElementById("taskPriority").value,
-        dueDate: document.getElementById("dueDate").value,
-        assignedTo: localStorage.getItem("loggedInUser"), // Use the logged-in user ID
-        status: 'Not Started',
-        progress: 0,
-    };
-
-    if (!task.title || !task.description || !task.dueDate) {
-        return showNotification("Please fill in all fields.", "danger");
-    }
-
-    tasks.push(task);
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-    showNotification("Task Created Successfully!", "success");
-    updateAssignedTaskList();
-    clearForm("createTaskForm");
+  event.preventDefault();
+  const task = {
+    id: Date.now(),
+    title: document.getElementById("taskTitle").value,
+    description: document.getElementById("taskDescription").value,
+    priority: document.getElementById("taskPriority").value,
+    dueDate: document.getElementById("dueDate").value,
+    assignedTo: loggedInUser.userId,
+    status: "Pending",
+    notes: ""
+  };
+  tasks.push(task);
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  event.target.reset();
+  alert("Task created successfully!");
 }
 
-// Add a comment to a task
+// ------------------ COMMENTS ------------------
 function addComment(event) {
-    event.preventDefault();
-
-    const taskId = document.getElementById("taskToComment").value;
-    const commentText = document.getElementById("commentText").value.trim();
-
-    if (!taskId || !commentText) {
-        return showNotification("Please select a task and enter a comment.", "danger");
-    }
-
-    const comment = {
-        id: Date.now(),
-        taskId,
-        text: commentText,
-        userId: localStorage.getItem("loggedInUser"),
-    };
-
-    comments.push(comment);
-    localStorage.setItem('comments', JSON.stringify(comments));
-    showNotification("Comment added successfully!", "success");
-    clearForm("addCommentForm");
+  event.preventDefault();
+  const comment = {
+    id: Date.now(),
+    taskId: document.getElementById("taskToCommentAdd").value,
+    userId: loggedInUser.userId,
+    text: document.getElementById("commentText").value
+  };
+  comments.push(comment);
+  localStorage.setItem("comments", JSON.stringify(comments));
+  event.target.reset();
+  alert("Comment added!");
 }
 
-// Populate task options for adding comments
-function populateTaskOptions() {
-    const taskToCommentSelect = document.getElementById("taskToComment");
-    taskToCommentSelect.innerHTML = ''; // Clear existing options
-
-    tasks.forEach(task => {
-        const option = document.createElement("option");
-        option.value = task.id;
-        option.textContent = task.title;
-        taskToCommentSelect.appendChild(option);
-    });
-}
-
-// Populate comments for a task
-function populateCommentOptions() {
-    const taskToCommentSelect = document.getElementById("taskToComment");
-    taskToCommentSelect.innerHTML = ''; // Clear existing options
-
-    tasks.forEach(task => {
-        const option = document.createElement("option");
-        option.value = task.id;
-        option.textContent = task.title;
-        taskToCommentSelect.appendChild(option);
-    });
-}
-// Function to view comments on a task
 function viewComments(event) {
-    event.preventDefault();
-    const taskId = document.getElementById("taskToComment").value;
+  event.preventDefault();
+  const taskId = document.getElementById("taskToCommentView").value;
+  const filteredComments = comments.filter(c => c.taskId == taskId);
 
-    // Check if the taskId is valid before filtering comments
-    if (!taskId) {
-        return showNotification("Please select a task to view comments.", "danger");
-    }
-
-    // Filter comments based on the logged-in user's tasks
-    const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser")).userId;
-    const userTasks = tasks.filter(task => task.assignedTo == loggedInUser);
-    const filteredComments = comments.filter(comment => userTasks.some(task => task.id == comment.taskId));
-
-    const commentsList = document.getElementById("commentsList");
-    commentsList.innerHTML = filteredComments.map(comment => `
+  const commentsList = document.getElementById("commentsList");
+  commentsList.innerHTML = filteredComments.length > 0
+    ? filteredComments.map(c => `
         <li>
-            <strong>Task:</strong> ${tasks.find(task => task.id == comment.taskId)?.title || 'Unknown Task'}<br>
-            <strong>User:</strong> ${comment.userId}<br>
-            <strong>Comment:</strong> ${comment.text}
+          <strong>User:</strong> ${c.userId} <br>
+          <strong>Comment:</strong> ${c.text}
         </li>
-    `).join('');
-
-    // Show the comments section
-    showSection('viewComments');
+      `).join("")
+    : "<li>No comments for this task.</li>";
 }
 
-// Helper functions
-function clearForm(formId) {
-    document.getElementById(formId)?.reset();
+// ------------------ PERFORM TASK ------------------
+function populateTaskOptions(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+
+  const userTasks = tasks.filter(task => task.assignedTo == loggedInUser.userId);
+  select.innerHTML = userTasks.length > 0
+    ? userTasks.map(t => `<option value="${t.id}">${t.title}</option>`).join("")
+    : "<option disabled>No tasks available</option>";
+
+  if (selectId === "performTaskSelect" && userTasks.length > 0) {
+    loadTaskDetails(userTasks[0].id);
+  }
 }
 
-function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type === "danger" ? "notification-danger" : ""}`;
-    notification.textContent = message;
-    document.body.appendChild(notification);
+function loadTaskDetails(taskId) {
+  const task = tasks.find(t => t.id == taskId);
+  if (!task) return;
 
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
+  document.getElementById("performTaskTitle").value = task.title;
+  document.getElementById("performTaskDescription").value = task.description;
+  document.getElementById("performTaskPriority").value = task.priority;
+  document.getElementById("performDueDate").value = task.dueDate;
+  document.getElementById("taskStatus").value = task.status;
+  document.getElementById("taskUpdates").value = task.notes || "";
 }
+
+function performTask(event) {
+  event.preventDefault();
+  const taskId = document.getElementById("performTaskSelect").value;
+  const task = tasks.find(t => t.id == taskId);
+  if (!task) return;
+
+  task.status = document.getElementById("taskStatus").value;
+  task.notes = document.getElementById("taskUpdates").value;
+
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+  alert("Task updated successfully!");
+  updateAssignedTaskList();
+  populateTaskOptions("performTaskSelect");
+}
+
+// ------------------ LOGOUT ------------------
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  localStorage.removeItem("loggedInUser");
+  window.location.href = "/html/loginpage.html";
+});

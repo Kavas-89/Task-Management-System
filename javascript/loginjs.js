@@ -1,3 +1,4 @@
+
 // Ensure the DOM is loaded before executing
 document.addEventListener("DOMContentLoaded", init);
 
@@ -5,7 +6,18 @@ document.addEventListener("DOMContentLoaded", init);
 function init() {
     const loginForm = document.getElementById("loginForm");
     const registrationForm = document.getElementById("registrationForm");
-    
+
+    // Add sample users to localStorage if not already present
+    if (!localStorage.getItem("users")) {
+        const users = [
+            { userId: 1, username: "Admin#12", password: "Admin@123", role: "admin" },
+            { userId: 2, username: "Manager#12", password: "Manager@123", role: "manager" },
+            { userId: 3, username: "Employee#12", password: "Employee@123", role: "employee" }
+        ];
+        localStorage.setItem("users", JSON.stringify(users));
+        console.log("Sample users added to localStorage:", users);
+    }
+
     if (!loginForm) {
         console.error("Login form not found.");
         return; // Exit if the form is not found
@@ -54,16 +66,27 @@ function handleLogin(event) {
 
     if (user) {
         console.log("User found:", user);
-        // Redirect based on role
-        if (user.role === "admin") {
+
+        // Create a loggedInUser object to keep things consistent
+        const loggedInUser = {
+            userId: user.userId ? user.userId.toString() : "N/A",  // fallback if userId missing
+            username: user.username,
+            role: user.role.toLowerCase()
+        };
+
+        // Save the logged-in user to localStorage
+        localStorage.setItem("loggedInUser", JSON.stringify(loggedInUser));
+
+        // Redirect based on role with fixed paths
+        if (loggedInUser.role === "admin") {
             console.log("Redirecting to admin dashboard...");
-            window.location.href = "html/admindashbord.html";
-        } else if (user.role === "manager") {
+            window.location.href = "adminDashboard.html";
+        } else if (loggedInUser.role === "manager") {
             console.log("Redirecting to manager dashboard...");
-            window.location.href = "html/mangerDashBord.html";
-        } else if (user.role === "employee") {
+            window.location.href = "managerDashboard.html";
+        } else if (loggedInUser.role === "employee") {
             console.log("Redirecting to employee dashboard...");
-            window.location.href = "html/employeeDashbord.html";
+            window.location.href = "employeeDashboard.html"; // fixed spelling
         } else {
             alert("Invalid role. Please contact support.");
         }
@@ -95,8 +118,11 @@ function handleRegistration(event) {
         return;
     }
 
+    // Generate a unique userId
+    const newUserId = Date.now() + Math.floor(Math.random() * 1000);
+
     // Create new user object
-    const newUser = { username, password, role };
+    const newUser = { userId: newUserId, username, password, role };
 
     // Add new user to the users array
     users.push(newUser);
@@ -174,7 +200,9 @@ function displayError(elementId, message) {
 // Update input field styles
 function updateInputStyle(inputElement, isValid) {
     const inputContainer = inputElement.closest(".mb-3");
-    const icon = inputContainer.querySelector(".bi"); // Select icon element
+    if (!inputContainer) return;
+    const icon = inputContainer.querySelector(".bi");
+    if (!icon) return;
 
     if (isValid) {
         inputElement.style.borderColor = "green";
@@ -199,15 +227,4 @@ function clearInputs() {
     if (passwordInput) passwordInput.value = "";
     if (regUsernameInput) regUsernameInput.value = "";
     if (regPasswordInput) regPasswordInput.value = "";
-}
-
-// Add sample users to localStorage if not already present
-if (!localStorage.getItem("users")) {
-    const users = [
-        { username: "Admin#12", password: "Admin@123", role: "admin" },
-        { username: "Manager#12", password: "Manager@123", role: "manager" },
-        { username: "Employee#12", password: "Employee@123", role: "employee" }
-    ];
-    localStorage.setItem("users", JSON.stringify(users));
-    console.log("Sample users added to localStorage:", users);
 }
